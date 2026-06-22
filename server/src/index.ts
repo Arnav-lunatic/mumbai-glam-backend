@@ -31,7 +31,6 @@ app.use("/auth", authRoutes);
 
 app.get("/user", authMiddleware, async (req:any, res:any) => {
 	const user = await UserModel.findById(req.user.id)
-	console.log(req.user)
 	return res.json({status: "success", message: "user Logged in", user})
 })
 

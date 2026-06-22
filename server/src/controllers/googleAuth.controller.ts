@@ -52,7 +52,7 @@ export const googleLogin = async (req: Request, res: Response) => {
 				httpOnly: true,
 				maxAge: 30 * 24 * 60 * 60 * 1000,
 			})
-			.json({ success: true });
+			.json({ success: true, message: "Logged In successfully", user });
 	} catch (error) {
 		res.status(500).json({
 			message: "Login failed",
