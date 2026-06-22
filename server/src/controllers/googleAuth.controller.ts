@@ -1,24 +1,18 @@
 import { type Request, type Response } from "express";
 import { OAuth2Client } from "google-auth-library";
-import jwt from "jsonwebtoken";
 
 import User from "../models/User.model.ts";
+import { generateToken } from "../utils/jwt.ts";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string;
-
-export const googleLogin = async (
-	req: Request,
-
-	res: Response,
-) => {
+export const googleLogin = async (req: Request, res: Response) => {
 	try {
 		const { token } = req.body;
 
 		const ticket = await client.verifyIdToken({
 			idToken: token,
-			audience: GOOGLE_CLIENT_ID,
+			audience: process.env.GOOGLE_CLIENT_ID as string,
 		});
 
 		const payload = ticket.getPayload();
@@ -41,28 +35,24 @@ export const googleLogin = async (
 
 		if (!user) {
 			user = await User.create({
-				googleId: sub ?? null,
+				googleId: sub,
 				email,
-				name: name ?? null,
+				name: name,
 				avatar: picture ?? null,
 			});
 		}
 
-		const accessToken = jwt.sign(
-			{
-				id: user._id,
-				email: user.email,
-			},
-			process.env.JWT_SECRET!,
-			{
-				expiresIn: "30d",
-			},
-		);
-
-		res.json({
-			accessToken,
-			user,
+		const accessToken = generateToken({
+			id: user._id.toString(),
+			email: user.email!,
 		});
+
+		res.status(200)
+			.cookie("token", accessToken, {
+				httpOnly: true,
+				maxAge: 30 * 24 * 60 * 60 * 1000,
+			})
+			.json({ success: true });
 	} catch (error) {
 		res.status(500).json({
 			message: "Login failed",
